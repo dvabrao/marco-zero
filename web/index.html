@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Marco Zero — Odômetro de Obras</title>
+<style>
+:root{
+  --blue:#111D3D;--blue2:#1A2F5E;--green:#1B5E20;--green2:#2E7D32;
+  --yellow:#F5C500;--yellow2:#FFD740;
+  --red:#B71C1C;--red2:#C62828;--orange:#E65100;--gray:#607D8B;
+  --bg:#F0F4F8;--card:#FFFFFF;--text:#111D3D;--sub:#546E7A;--border:#CFD8DC;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;
+  padding-top:calc(var(--safe-top) + 8px);padding-bottom:calc(var(--safe-bot) + 8px);}
+button{font-family:inherit;}
+
+/* HEADER (igual SLIR) */
+.header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--card);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo-wrap{width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;
+  background:#f0f4f8;display:flex;align-items:center;justify-content:center;}
+.logo-wrap img{width:100%;height:100%;object-fit:contain;}
+.logo-fallback{background:#003F87;width:48px;height:48px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;flex-shrink:0;}
+.header-title{flex:1;min-width:0;}
+.header-title h1{font-size:16px;font-weight:800;color:var(--blue);line-height:1.2;text-transform:uppercase;letter-spacing:.5px;}
+.header-title p{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;}
+.btn-icon{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0;color:var(--blue);}
+
+.main{padding:10px 10px 80px;}
+.card{background:var(--card);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+.card-label{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--sub);text-transform:uppercase;margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.card-label .lnk{font-size:11px;color:var(--blue2);text-transform:none;letter-spacing:0;cursor:pointer;font-weight:700;
+  background:none;border:none;}
+
+/* ODÔMETRO (igual SLIR) */
+.odo-card{background:linear-gradient(135deg,#111D3D 0%,#1A2F5E 100%);border-radius:18px;
+  padding:16px 14px 14px;margin-bottom:10px;box-shadow:0 4px 16px rgba(17,29,61,.35);}
+.odo-status-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.odo-dot{width:8px;height:8px;border-radius:50%;background:#9E9E9E;flex-shrink:0;transition:.3s;}
+.odo-dot.on{background:#F5C500;box-shadow:0 0 6px #F5C500;}
+.odo-dot.weak{background:#FFD54F;}
+.odo-status-txt{font-size:11px;color:rgba(255,255,255,.75);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pill{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:none;flex-shrink:0;}
+.pill-dir{background:rgba(255,255,255,.15);color:#fff;}
+.pill-dir.cresc{background:rgba(245,197,0,.25);color:#F5C500;}
+.pill-dir.decresc{background:rgba(255,138,128,.2);color:#FF8A80;}
+.mode-row{display:flex;gap:6px;margin-bottom:12px;}
+.mode-chip{flex:1;padding:7px 4px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);}
+.mode-chip.sel{background:rgba(245,197,0,.22);border-color:#F5C500;color:#F5C500;}
+.odo-big{text-align:center;cursor:pointer;user-select:none;padding:2px 0;}
+.odo-val{font-size:56px;font-weight:800;color:#fff;line-height:1;letter-spacing:-2px;white-space:nowrap;}
+.odo-val .odo-dec{color:rgba(255,255,255,.75);}
+.odo-val .odo-plus{font-size:34px;color:rgba(255,255,255,.75);letter-spacing:-1px;}
+.odo-unit{font-size:16px;font-weight:400;color:rgba(255,255,255,.5);margin-left:4px;vertical-align:middle;letter-spacing:0;}
+.odo-pre{font-size:16px;font-weight:600;color:rgba(255,255,255,.5);margin-right:6px;vertical-align:middle;letter-spacing:0;}
+.odo-second{text-align:center;margin-top:8px;cursor:pointer;user-select:none;}
+.odo-second span.v{font-size:26px;font-weight:800;color:#F5C500;letter-spacing:-.5px;}
+.odo-second span.l{font-size:12px;color:rgba(245,197,0,.7);margin-right:6px;}
+.odo-hint{text-align:center;font-size:11px;color:rgba(255,255,255,.45);margin-top:5px;}
+.odo-latlon{text-align:center;font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;font-family:monospace;letter-spacing:.2px;}
+.odo-sub-row{display:flex;gap:5px;margin-top:10px;}
+.odo-badge{flex:1;background:rgba(255,255,255,.12);border-radius:9px;padding:6px 4px;text-align:center;}
+.odo-badge span{display:block;font-size:11px;font-weight:700;color:#fff;}
+.odo-badge small{font-size:9px;color:rgba(255,255,255,.55);text-transform:uppercase;}
+.odo-closed{text-align:center;padding:18px 6px 8px;}
+.odo-closed .big{font-size:22px;font-weight:800;color:#fff;}
+.odo-closed .sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:6px;line-height:1.5;}
+
+/* SEÇÃO */
+.sec-row{display:flex;align-items:center;gap:10px;}
+.sec-info{flex:1;min-width:0;}
+.sec-info h3{font-size:14px;font-weight:700;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sec-info p{font-size:12px;color:var(--sub);margin-top:2px;line-height:1.4;}
+.rec{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:var(--red2);
+  background:#FFEBEE;border-radius:20px;padding:2px 8px;margin-top:5px;}
+.rec i{width:7px;height:7px;border-radius:50%;background:var(--red2);display:inline-block;animation:blink 1.2s infinite;}
+@keyframes blink{50%{opacity:.25}}
+.btn-sm{padding:9px 12px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.btn-sm.y{background:var(--yellow);color:var(--blue);}
+.btn-sm.n{background:var(--blue2);color:#fff;}
+.btn-sm.r{background:#FFEBEE;color:var(--red2);}
+.btn-sm.g{background:#ECEFF1;color:var(--blue);}
+
+/* PARCIAIS */
+.parc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.parc{background:var(--bg);border-radius:12px;padding:9px 10px;position:relative;}
+.parc.tot{background:#FFF8E1;}
+.parc-name{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:44px;cursor:pointer;}
+.parc-km{font-size:20px;font-weight:800;color:var(--blue);margin-top:3px;}
+.parc-km small{font-size:11px;font-weight:500;color:var(--sub);}
+.parc-est{font-size:12px;font-weight:700;color:var(--blue2);}
+.parc-btns{position:absolute;top:6px;right:6px;display:flex;gap:4px;}
+.parc-btns button{width:22px;height:22px;border-radius:7px;border:none;font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;}
+.pb-zero{background:var(--yellow);color:var(--blue);font-weight:800;}
+.pb-del{background:#FFEBEE;color:var(--red2);}
+
+/* IR ATÉ */
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:8px;}
+.seg button{flex:1;border:none;background:none;padding:7px;border-radius:8px;font-size:12px;font-weight:700;color:var(--sub);cursor:pointer;}
+.seg button.sel{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.goto-res{margin-top:8px;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:13px;color:var(--blue);line-height:1.5;display:none;}
+.goto-res b{font-size:18px;}
+
+/* INPUTS */
+.est-in{display:flex;align-items:center;gap:6px;}
+.est-in input{flex:1;min-width:0;}
+.est-in .plus{font-size:18px;font-weight:800;color:var(--sub);flex-shrink:0;}
+.inp{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;
+  color:var(--text);background:#fff;outline:none;font-family:inherit;}
+.inp:focus{border-color:var(--blue2);}
+.inp.big{font-size:20px;font-weight:700;text-align:center;}
+
+/* BOTÕES PRINCIPAIS */
+.btn-row{display:flex;gap:8px;margin-bottom:10px;}
+.btn{flex:1;padding:14px 8px;border:none;border-radius:14px;font-size:13px;font-weight:700;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:opacity .15s;}
+.btn:active{opacity:.75;}
+.btn span.ico{font-size:22px;}
+.btn-reg{background:var(--yellow);color:var(--blue);}
+.btn-exp-main{background:var(--blue2);color:#fff;}
+.btn-fin{background:#fff;color:var(--blue);border:1.5px solid var(--border);}
+.btn:disabled{opacity:.4;}
+
+/* PONTOS */
+.pts-list{display:flex;flex-direction:column;gap:6px;}
+.pt-item{background:var(--card);border-radius:12px;padding:11px 12px;display:flex;align-items:flex-start;gap:10px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #EEF1F4;}
+.pt-num{min-width:44px;height:26px;border-radius:13px;background:var(--blue);color:#F5C500;padding:0 7px;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.pt-info{flex:1;min-width:0;}
+.pt-desc{font-size:13px;font-weight:700;color:var(--text);}
+.pt-line{font-size:11px;color:var(--blue2);margin-top:2px;font-weight:600;}
+.pt-obs{font-size:11px;color:var(--sub);margin-top:2px;font-style:italic;}
+.pt-coords{font-size:10px;color:#90A4AE;font-family:monospace;margin-top:1px;}
+.pt-edit{width:34px;height:34px;border-radius:9px;background:#E8F5E9;border:none;color:#2E7D32;
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pt-del{width:34px;height:34px;border-radius:9px;background:#FFEBEE;border:none;color:var(--red2);
+  font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.empty-pts{text-align:center;padding:20px;color:var(--sub);font-size:13px;line-height:1.6;}
+
+/* HISTÓRICO DE SEÇÕES */
+.hist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-item .i{flex:1;min-width:0;}
+.hist-item .t{font-size:13px;font-weight:700;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-item .s{font-size:11px;color:var(--sub);margin-top:2px;}
+
+/* MODAL (igual SLIR) */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--card);border-radius:22px 22px 0 0;width:100%;max-width:520px;
+  padding:20px 18px calc(20px + var(--safe-bot));max-height:92dvh;overflow-y:auto;}
+.modal-title{font-size:17px;font-weight:800;color:var(--blue);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--sub);}
+.field{margin-bottom:14px;}
+.field>label{display:block;font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;}
+.field textarea{resize:vertical;min-height:60px;}
+.help{font-size:11px;color:var(--sub);margin-top:5px;line-height:1.5;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--sub);}
+.chip.sel{background:#E8F5E9;border-color:#2E7D32;color:#1B5E20;}
+.chip.sel.dec{background:#FFEBEE;border-color:#C62828;color:#B71C1C;}
+.btn-full{width:100%;padding:13px;background:var(--yellow);color:var(--blue);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;}
+.btn-full.navy{background:var(--blue2);color:#fff;}
+.btn-full.gray{background:#ECEFF1;color:var(--blue);}
+.btn-full.red{background:#FFEBEE;color:var(--red2);}
+.exp-btn-list{display:flex;flex-direction:column;gap:8px;}
+.exp-opt{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;cursor:pointer;border:2px solid var(--border);background:#fff;text-align:left;width:100%;}
+.exp-opt:active{border-color:var(--blue2);background:#EEF4FF;}
+.exp-opt .ico{font-size:28px;flex-shrink:0;}
+.exp-opt .lbl{font-size:15px;font-weight:700;color:var(--blue);}
+.exp-opt .sub{font-size:12px;color:var(--sub);}
+.preview-fmt{background:var(--bg);border-radius:10px;padding:9px 11px;font-family:monospace;font-size:11px;color:var(--blue);word-break:break-all;}
+
+/* GPS BANNER */
+.gps-banner{padding:9px 12px;border-radius:12px;font-size:12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.gps-banner.warn{background:#FFF3E0;color:#E65100;}
+.gps-banner.ok{background:#E8F5E9;color:#2E7D32;}
+.gps-banner.err{background:#FFEBEE;color:var(--red2);}
+.gps-banner.weak{background:#FFF8E1;color:#F57F17;}
+
+/* SETTINGS (igual SLIR) */
+.settings-panel{position:fixed;inset:0;background:var(--bg);z-index:300;overflow-y:auto;
+  padding-top:calc(var(--safe-top) + 8px);padding-bottom:calc(var(--safe-bot) + 20px);display:none;}
+.settings-panel.open{display:block;}
+.settings-header{display:flex;align-items:center;gap:10px;padding:10px 14px 12px;background:var(--card);
+  border-bottom:1px solid var(--border);margin-bottom:10px;position:sticky;top:0;z-index:10;}
+.settings-header h2{flex:1;font-size:17px;font-weight:700;color:var(--blue);}
+.acc-item{background:#fff;border-radius:14px;margin:0 10px 8px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;}
+.acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;}
+.acc-hdr-left{display:flex;align-items:center;gap:10px;}
+.acc-hdr-icon{font-size:20px;line-height:1;}
+.acc-hdr-info{display:flex;flex-direction:column;}
+.acc-hdr-title{font-size:14px;font-weight:700;color:var(--blue);}
+.acc-hdr-sub{font-size:11px;color:var(--sub);margin-top:1px;}
+.acc-arrow{font-size:14px;color:var(--sub);transition:transform .2s;font-weight:700;}
+.acc-item.open .acc-arrow{transform:rotate(90deg);}
+.acc-body{display:none;padding:0 14px 12px;}
+.acc-item.open .acc-body{display:block;}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.set-row:last-child{border-bottom:none;}
+.set-row label{font-size:13px;color:var(--text);}
+.set-row select,.set-row input{padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);outline:none;background:#fff;}
+.set-row input{width:90px;text-align:center;}
+
+/* SOBRE */
+.about-card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;}
+.about-top{background:linear-gradient(135deg,#111D3D,#1A2F5E);padding:20px 16px;display:flex;align-items:center;gap:14px;}
+.about-logo{width:56px;height:56px;border-radius:12px;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:#003F87;}
+.about-logo img{width:100%;height:100%;object-fit:contain;}
+.about-name{color:#fff;}
+.about-name h4{font-size:15px;font-weight:800;line-height:1.3;}
+.about-name p{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
+.about-body{padding:14px 16px;}
+.about-body p{font-size:12px;color:var(--sub);line-height:1.6;}
+.about-full{position:fixed;inset:0;background:#111D3D;z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;padding:30px 24px;}
+.about-full.open{display:flex;}
+.about-full-logo{width:120px;height:120px;border-radius:20px;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:24px;}
+.about-full-logo img{width:100%;height:100%;object-fit:contain;}
+.about-full-name{font-size:28px;font-weight:800;color:#fff;text-align:center;text-transform:uppercase;letter-spacing:1px;}
+.about-full-by{font-size:13px;color:#F5C500;margin-top:4px;font-weight:700;letter-spacing:.5px;}
+.about-full-sub{font-size:14px;color:rgba(255,255,255,.7);text-align:center;margin-top:14px;line-height:1.6;}
+.about-full-ver{font-size:12px;color:rgba(255,255,255,.45);margin-top:16px;}
+.about-full-close{position:absolute;top:calc(var(--safe-top) + 12px);right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;
+  border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;}
+
+/* TABLET */
+@media (min-width:600px) and (orientation:landscape){
+  body{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto 1fr;height:100dvh;overflow:hidden;}
+  .header{grid-column:1/-1;grid-row:1;}
+  .main{grid-column:1;grid-row:2;overflow-y:auto;padding:10px 10px 20px;}
+  .tablet-aside{grid-column:2;grid-row:2;overflow-y:auto;background:var(--card);border-left:1px solid var(--border);padding:12px 10px;}
+  .hide-on-tablet{display:none;}
+  .parc-grid{grid-template-columns:1fr 1fr 1fr;}
+}
+@media not ((min-width:600px) and (orientation:landscape)){ .tablet-aside{display:none;} }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div id="logo-container"><div class="logo-wrap"><img src="dvabrao-logo.png" onerror="useFallbackLogo()" alt=""></div></div>
+  <div class="header-title">
+    <h1>Marco Zero</h1>
+    <p>Odômetro de Obras · KM e Estacas</p>
+  </div>
+  <button class="btn-icon" onclick="openSettings()">⚙️</button>
+</div>
+
+<div class="main">
+
+  <div id="gps-banner" class="gps-banner warn" onclick="toggleDiag()">
+    <span>📡</span><span id="gps-banner-txt" style="flex:1">Aguardando GPS...</span><span style="font-size:10px;opacity:.6">🔍</span>
+  </div>
+  <div id="gps-diag-panel" style="display:none;background:#1A2342;border-radius:12px;margin:0 0 10px;padding:12px 14px;font-size:12px;color:#fff;">
+    <div style="font-weight:700;margin-bottom:8px;color:#FFD740;">🛰️ Diagnóstico GPS</div>
+    <table style="width:100%;border-collapse:collapse;line-height:1.9;">
+      <tr><td style="color:rgba(255,255,255,.6);width:40%">Fonte ativa</td><td id="gps-diag-src">—</td></tr>
+      <tr><td style="color:rgba(255,255,255,.6)">Posições recv.</td><td id="gps-diag-cnt">0</td></tr>
+      <tr><td style="color:rgba(255,255,255,.6)">Precisão</td><td id="gps-diag-acc">—</td></tr>
+      <tr><td style="color:rgba(255,255,255,.6)">Coordenada</td><td id="gps-diag-coord" style="font-size:11px;">aguardando...</td></tr>
+      <tr><td style="color:rgba(255,255,255,.6)">Tempo ativo</td><td id="gps-diag-ela">—</td></tr>
+      <tr><td style="color:rgba(255,255,255,.6)">Último erro</td><td id="gps-diag-err" style="color:#FF8A65;">—</td></tr>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="diagRestartGps()" style="flex:1;padding:8px;border:none;border-radius:8px;background:#2196F3;color:#fff;font-size:12px;font-weight:700;">🔄 Reiniciar GPS</button>
+      <button onclick="diagTestWebview()" style="flex:1;padding:8px;border:none;border-radius:8px;background:#4CAF50;color:#fff;font-size:12px;font-weight:700;">🌐 Testar WebView</button>
+    </div>
+  </div>
+
+  <!-- ODÔMETRO -->
+  <div class="odo-card">
+    <div class="odo-status-row">
+      <div class="odo-dot" id="odo-dot"></div>
+      <span class="odo-status-txt" id="odo-status">GPS inativo</span>
+      <button class="pill pill-dir" id="pill-dir" onclick="toggleDir()">▲ Crescente</button>
+    </div>
+    <div id="odo-open">
+      <div class="mode-row">
+        <button class="mode-chip" id="mode-km" onclick="setModo('km')">KM</button>
+        <button class="mode-chip" id="mode-est" onclick="setModo('est')">Estaca</button>
+        <button class="mode-chip" id="mode-cor" onclick="setModo('cor')">KM ⇄ Estaca</button>
+      </div>
+      <div class="odo-big" onclick="openCorrigir()"><div id="odo-main"></div></div>
+      <div class="odo-second" id="odo-second" onclick="swapPrim()"></div>
+      <div class="odo-hint">✎ toque no valor para corrigir a posição</div>
+    </div>
+    <div id="odo-closed" class="odo-closed">
+      <div class="big">Nenhuma seção aberta</div>
+      <div class="sub">Abra uma seção para cravar o marco zero.<br>Você define o km inicial e/ou a estaca de referência.</div>
+    </div>
+    <div class="odo-latlon" id="odo-latlon">— aguardando GPS —</div>
+    <div class="odo-sub-row">
+      <div class="odo-badge"><span id="b-dist">0,000</span><small>km percorridos</small></div>
+      <div class="odo-badge"><span id="b-spd">0</span><small id="b-spd-unit">km/h</small></div>
+      <div class="odo-badge"><span id="b-pts">0</span><small>pontos</small></div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO -->
+  <div class="card">
+    <div class="sec-row">
+      <div class="sec-info">
+        <h3 id="sec-nome">Sem seção</h3>
+        <p id="sec-desc">Toque em “Abrir seção” para começar.</p>
+        <div class="rec" id="sec-rec" style="display:none"><i></i><span id="sec-rec-txt">Gravando trajeto</span></div>
+      </div>
+      <button class="btn-sm y" id="btn-sec" onclick="onSecBtn()">▶ Abrir seção</button>
+    </div>
+  </div>
+
+  <!-- PARCIAIS -->
+  <div class="card" id="card-parc">
+    <div class="card-label">Odômetros parciais <button class="lnk" onclick="addParcial()">+ Parcial</button></div>
+    <div class="parc-grid" id="parc-grid"></div>
+  </div>
+
+  <!-- BOTÕES -->
+  <div class="btn-row">
+    <button class="btn btn-reg" id="btn-mark" onclick="openAddPoint()"><span class="ico">📍</span>Marcar Ponto</button>
+    <button class="btn btn-exp-main" onclick="openExport()"><span class="ico">📤</span>Exportar</button>
+    <button class="btn btn-fin" onclick="onSecBtn()" id="btn-fin2"><span class="ico">🏁</span><span id="btn-fin2-txt">Encerrar</span></button>
+  </div>
+
+  <!-- IR ATÉ / CONVERTER -->
+  <div class="card" id="card-goto">
+    <div class="card-label">Ir até / Converter</div>
+    <div class="seg"><button id="gt-km" onclick="setGotoTipo('km')">KM</button><button id="gt-est" onclick="setGotoTipo('est')">Estaca</button></div>
+    <div id="gt-in-km"><input class="inp" id="gt-km-v" inputmode="decimal" placeholder="km  ex.: 1,250" oninput="calcGoto()"></div>
+    <div id="gt-in-est" class="est-in"><input class="inp" id="gt-est-n" inputmode="numeric" placeholder="estaca  ex.: 92" oninput="calcGoto()"><span class="plus">+</span><input class="inp" id="gt-est-m" inputmode="decimal" placeholder="metros" oninput="calcGoto()"></div>
+    <div class="goto-res" id="goto-res"></div>
+  </div>
+
+  <!-- PONTOS -->
+  <div class="card hide-on-tablet">
+    <div class="card-label">Pontos da seção</div>
+    <div class="pts-list" id="pts-list"></div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div class="card" id="card-hist">
+    <div class="card-label">Seções gravadas</div>
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<div class="tablet-aside">
+  <div class="card-label" style="font-size:11px;font-weight:700;letter-spacing:.7px;color:var(--sub);text-transform:uppercase;padding:0 0 8px;">Pontos da seção</div>
+  <div class="pts-list" id="pts-list-tablet"></div>
+</div>
+
+<!-- MODAL ABRIR SEÇÃO -->
+<div class="modal-overlay hidden" id="modal-sec">
+  <div class="modal">
+    <div class="modal-title">🚩 Abrir nova seção<button class="modal-close" onclick="closeModal('modal-sec')">✕</button></div>
+    <div class="field"><label>Nome da obra / trecho</label><input class="inp" id="ns-nome" placeholder="ex.: Acesso Bairro X – Trecho 1"></div>
+    <div class="field"><label>Navegar em</label>
+      <div class="chips">
+        <button class="chip" id="ns-m-km" onclick="nsModo('km')">KM</button>
+        <button class="chip" id="ns-m-est" onclick="nsModo('est')">Estaca</button>
+        <button class="chip" id="ns-m-cor" onclick="nsModo('cor')">KM ⇄ Estaca</button>
+      </div>
+    </div>
+    <div class="field"><label>Sentido</label>
+      <div class="chips">
+        <button class="chip" id="ns-d-C" onclick="nsDir('C')">▲ Crescente</button>
+        <button class="chip" id="ns-d-D" onclick="nsDir('D')">▼ Decrescente</button>
+      </div>
+    </div>
+    <div class="field" id="ns-f-km"><label>KM inicial (marco zero)</label><input class="inp big" id="ns-km" inputmode="decimal" placeholder="0,000"></div>
+    <div class="field" id="ns-f-est"><label id="ns-est-lbl">Estaca inicial</label>
+      <div class="est-in"><input class="inp big" id="ns-est-n" inputmode="numeric" placeholder="0"><span class="plus">+</span><input class="inp big" id="ns-est-m" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div class="help" id="ns-help"></div>
+    <button class="btn-full" style="margin-top:14px" onclick="startSection()">▶ Abrir seção e zerar aqui</button>
+  </div>
+</div>
+
+<!-- MODAL CORRIGIR POSIÇÃO -->
+<div class="modal-overlay hidden" id="modal-cor">
+  <div class="modal">
+    <div class="modal-title">🎯 Corrigir posição atual<button class="modal-close" onclick="closeModal('modal-cor')">✕</button></div>
+    <p class="help" style="margin:-6px 0 12px">Use ao passar por uma estaca ou marco conhecido. A posição é ajustada e a contagem continua daqui. Os parciais e o trajeto não são zerados.</p>
+    <div class="seg"><button id="cr-km" onclick="setCorTipo('km')">KM</button><button id="cr-est" onclick="setCorTipo('est')">Estaca</button></div>
+    <div id="cr-in-km" class="field"><input class="inp big" id="cr-km-v" inputmode="decimal" placeholder="0,000"></div>
+    <div id="cr-in-est" class="field est-in"><input class="inp big" id="cr-est-n" inputmode="numeric" placeholder="0"><span class="plus">+</span><input class="inp big" id="cr-est-m" inputmode="decimal" placeholder="0,00"></div>
+    <button class="btn-full" onclick="applyCorrigir()">✓ Aplicar correção</button>
+  </div>
+</div>
+
+<!-- MODAL PONTO -->
+<div class="modal-overlay hidden" id="modal-pt">
+  <div class="modal">
+    <div class="modal-title"><span id="pt-title">📍 Marcar Ponto</span><button class="modal-close" onclick="closeModal('modal-pt')">✕</button></div>
+    <div class="field"><label>Registro</label><div class="preview-fmt" id="pt-reg"></div></div>
+    <div class="field"><label>Descrição</label><input class="inp" id="pt-desc" placeholder="ex.: Bueiro existente, início do aterro..."></div>
+    <div class="field"><label>Observação</label><textarea class="inp" id="pt-obs" rows="2" placeholder="Detalhes adicionais..."></textarea></div>
+    <button class="btn-full" onclick="savePoint()">✓ Salvar Ponto</button>
+  </div>
+</div>
+
+<!-- MODAL EXPORTAR -->
+<div class="modal-overlay hidden" id="modal-exp">
+  <div class="modal">
+    <div class="modal-title">📤 Exportar seção<button class="modal-close" onclick="closeModal('modal-exp')">✕</button></div>
+    <div class="field"><label>Seção</label><select class="inp" id="exp-sec"></select></div>
+    <div class="exp-btn-list">
+      <button class="exp-opt" onclick="doExport('kml')"><span class="ico">🗺️</span><div><div class="lbl">KML</div><div class="sub">Trajeto + pontos · Google Earth / Maps / Drive</div></div></button>
+      <button class="exp-opt" onclick="doExport('pdf')"><span class="ico">📄</span><div><div class="lbl">Relatório PDF</div><div class="sub">Abre a impressão · “Salvar como PDF”</div></div></button>
+      <button class="exp-opt" onclick="doExport('html')"><span class="ico">🌐</span><div><div class="lbl">Relatório HTML</div><div class="sub">WhatsApp / Drive / e-mail</div></div></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENCERRAR -->
+<div class="modal-overlay hidden" id="modal-fin">
+  <div class="modal">
+    <div class="modal-title">🏁 Encerrar seção<button class="modal-close" onclick="closeModal('modal-fin')">✕</button></div>
+    <p class="help" style="font-size:13px;margin-bottom:12px">A gravação do trajeto para e a seção fica salva em “Seções gravadas”. Você pode exportá-la a qualquer momento.</p>
+    <button class="btn-full" onclick="endSection()">🏁 Encerrar seção</button>
+    <button class="btn-full gray" style="margin-top:8px" onclick="closeModal('modal-fin')">Continuar medindo</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMA -->
+<div class="modal-overlay hidden" id="modal-conf">
+  <div class="modal">
+    <div class="modal-title"><span id="conf-title">Confirmar</span><button class="modal-close" onclick="closeModal('modal-conf')">✕</button></div>
+    <p id="conf-desc" style="font-size:13px;color:var(--sub);margin-bottom:16px;"></p>
+    <button class="btn-full red" id="conf-ok">🗑️ Remover</button>
+    <button class="btn-full gray" style="margin-top:8px;" onclick="closeModal('modal-conf')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL RENOMEAR PARCIAL -->
+<div class="modal-overlay hidden" id="modal-ren">
+  <div class="modal">
+    <div class="modal-title">✏️ Nome do parcial<button class="modal-close" onclick="closeModal('modal-ren')">✕</button></div>
+    <div class="field"><input class="inp" id="ren-v" placeholder="ex.: Bueiro 1 → Bueiro 2"></div>
+    <button class="btn-full" onclick="applyRename()">✓ Salvar</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-header"><button class="btn-icon" onclick="closeSettings()">←</button><h2>Configurações</h2></div>
+  <div class="acc-item open" id="acc-est">
+    <div class="acc-hdr" onclick="toggleAcc('acc-est')">
+      <div class="acc-hdr-left"><span class="acc-hdr-icon">📏</span><div class="acc-hdr-info"><span class="acc-hdr-title">Estaqueamento &amp; GPS</span><span class="acc-hdr-sub">Tamanho da estaca, unidades e precisão</span></div></div>
+      <span class="acc-arrow">›</span>
+    </div>
+    <div class="acc-body">
+      <div class="set-row"><label>Tamanho da estaca (m)</label><input id="set-est" inputmode="decimal" onchange="saveSettings()"></div>
+      <div class="set-row"><label>Velocidade</label><select id="set-spd" onchange="saveSettings()"><option value="kmh">km/h</option><option value="ms">m/s</option></select></div>
+      <div class="set-row"><label>Coordenadas na tela</label><select id="set-coord" onchange="saveSettings()"><option value="dd">DD (decimais)</option><option value="ddm">DDM</option><option value="dms">DMS</option><option value="utm">UTM</option></select></div>
+      <div class="set-row"><label>Precisão mínima do GPS</label><select id="set-acc" onchange="saveSettings()"><option value="20">20 m</option><option value="30">30 m</option><option value="40">40 m (padrão)</option><option value="60">60 m</option></select></div>
+      <p class="help">A estaca padrão em obras rodoviárias é de 20 m (estaca 6 + 15,00 = 135 m). O tamanho escolhido vale para as novas leituras.</p>
+    </div>
+  </div>
+  <div class="acc-item" id="acc-sobre">
+    <div class="acc-hdr" onclick="toggleAcc('acc-sobre')">
+      <div class="acc-hdr-left"><span class="acc-hdr-icon">ℹ️</span><div class="acc-hdr-info"><span class="acc-hdr-title">Sobre o aplicativo</span><span class="acc-hdr-sub">Versão e informações</span></div></div>
+      <span class="acc-arrow">›</span>
+    </div>
+    <div class="acc-body" style="padding:0 6px 12px">
+      <div class="about-card" onclick="openAboutFull()">
+        <div class="about-top">
+          <div class="about-logo"><img src="dvabrao-logo.png" onerror="this.parentElement.textContent='DVA'" alt=""></div>
+          <div class="about-name"><h4>MARCO ZERO</h4><p>by DVAbrão Serviços · <span id="about-ver">Versão 1.0</span></p></div>
+        </div>
+        <div class="about-body"><p>Odômetro de obras com GPS: km e estacas correlacionados, parciais, marcação de pontos e exportação KML / PDF. Mesmo motor de odômetro do SLIR.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="about-full" id="about-full">
+  <button class="about-full-close" onclick="closeAboutFull()">✕</button>
+  <div class="about-full-logo"><img src="dvabrao-logo.png" onerror="this.parentElement.innerHTML='<span style=\'font-size:32px;font-weight:800;color:#003F87\'>DVA</span>'" alt=""></div>
+  <div class="about-full-name">Marco Zero</div>
+  <div class="about-full-by">by DVAbrão Serviços</div>
+  <div class="about-full-sub">Odômetro de Obras · KM e Estacas<br>Navegação em obra com GPS,<br>parciais, pontos e exportação KML / PDF</div>
+  <div class="about-full-ver" id="about-full-ver">Versão 1.0</div>
+</div>
+
+<script>
+// ════════════════════════════════
+//  ESTADO
+// ════════════════════════════════
+const STORE='marcozero_v1';
+let settings={est:20, spd:'kmh', coord:'dd', acc:40};
+let sessions=[];        // todas as seções (abertas e encerradas)
+let activeId=null;      // id da seção aberta
+let lastLat=null,lastLon=null,lastTime=null;
+let curLat=null,curLon=null,curAcc=0,curSpd=0;
+let watchId=null;
+const SPD_MAX=150;      // km/h — descarta saltos (igual SLIR)
+let gotoTipo='est', corTipo='est', editPt=-1, frozen=null, renIdx=-1;
+let nsState={modo:'cor',dir:'C'};
+
+function S(){return sessions.find(s=>s.id===activeId)||null;}
+function save(){try{localStorage.setItem(STORE,JSON.stringify({settings,sessions,activeId}));}catch(e){console.warn('save',e);}}
+function load(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORE)||'{}');
+    if(d.settings) settings=Object.assign(settings,d.settings);
+    if(d.sessions) sessions=d.sessions;
+    if(d.activeId&&sessions.some(s=>s.id===d.activeId)) activeId=d.activeId;
+  }catch(e){}
+}
+
+// ════════════════════════════════
+//  POSIÇÃO NO EIXO
+//  o = deslocamento (m) a partir do marco zero da seção, com sinal pelo sentido
+//  km(m) = k0 + o      estaca(m) = s0 + o
+// ════════════════════════════════
+function off(s){s=s||S();if(!s)return 0;return s.baseOff+(s.dir==='C'?1:-1)*(s.dist-s.baseDist);}
+function kmM(s,o){return s.k0+o;}
+function estM(s,o){return s.s0+o;}
+function estSize(){const e=parseFloat(settings.est);return e>0?e:20;}
+
+// ════════════════════════════════
+//  FORMATAÇÃO
+// ════════════════════════════════
+function nf(v,dec){return v.toFixed(dec).replace('.',',');}
+function fmtKm(m){if(m==null||isNaN(m))return '—';const s=m<0?'-':'';return s+nf(Math.abs(m)/1000,3);}
+function estParts(m){
+  const E=estSize();const neg=m<0;let a=Math.abs(m);
+  let n=Math.floor(a/E);let r=Math.round((a-n*E)*100)/100;
+  if(r>=E){n+=1;r=0;}
+  return{neg,n,r};
+}
+function fmtEst(m){if(m==null||isNaN(m))return '—';const p=estParts(m);return (p.neg?'-':'')+p.n+' + '+nf(p.r,2);}
+function fmtDistM(m){return m<1000?nf(m,1)+' m':nf(m/1000,3)+' km';}
+function parseNum(v){if(v==null)return NaN;v=String(v).trim().replace(/\s/g,'');if(!v)return NaN;
+  if(v.indexOf(',')>=0) v=v.replace(/\./g,'').replace(',','.');return parseFloat(v);}
+function readEst(nId,mId){
+  const n=parseNum(document.getElementById(nId).value);const m=parseNum(document.getElementById(mId).value);
+  if(isNaN(n)&&isNaN(m))return NaN;return (isNaN(n)?0:n)*estSize()+(isNaN(m)?0:m);
+}
+function readKm(id){const v=parseNum(document.getElementById(id).value);return isNaN(v)?NaN:v*1000;}
+function fmtSpd(kmh){return settings.spd==='ms'?nf(kmh/3.6,1):Math.round(kmh).toString();}
+function fmtCoord(lat,lon){
+  if(settings.coord==='ddm')return toDDM(lat,'NS')+', '+toDDM(lon,'EW');
+  if(settings.coord==='dms')return toDMS(lat,'NS')+', '+toDMS(lon,'EW');
+  if(settings.coord==='utm')return toUTM(lat,lon);
+  return lat.toFixed(6)+', '+lon.toFixed(6);
+}
+function toDDM(v,d){const g=Math.trunc(Math.abs(v));return g+'°'+((Math.abs(v)-g)*60).toFixed(4)+"' "+(v>=0?d[0]:d[1]);}
+function toDMS(v,d){const g=Math.trunc(Math.abs(v));const mf=(Math.abs(v)-g)*60;const m=Math.trunc(mf);return g+'°'+m+"'"+((mf-m)*60).toFixed(1)+'" '+(v>=0?d[0]:d[1]);}
+function toUTM(lat,lon){
+  const zone=Math.floor((lon+180)/6)+1,hemi=lat>=0?'N':'S',a=6378137,e2=0.00669438;
+  const phi=lat*Math.PI/180,lam=lon*Math.PI/180,lam0=((zone-1)*6-180+3)*Math.PI/180,N0=lat<0?10000000:0;
+  const n=a/Math.sqrt(1-e2*Math.sin(phi)**2),T=Math.tan(phi)**2,C=e2/(1-e2)*Math.cos(phi)**2,A=(lam-lam0)*Math.cos(phi);
+  const E=500000+0.9996*n*(A+(1-T+C)*A**3/6);
+  const M=a*((1-e2/4-3*e2**2/64)*phi-(3*e2/8+3*e2**2/32)*Math.sin(2*phi)+(15*e2**2/256)*Math.sin(4*phi));
+  const N2=N0+0.9996*(M+n*Math.tan(phi)*((A**2/2)+(5-T+9*C)*A**4/24));
+  return zone+hemi+' E:'+Math.round(E)+' N:'+Math.round(N2);
+}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDT(t){const d=new Date(t);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function pcode(i){return 'P'+String(i+1).padStart(3,'0');}
+// Linha padrão do ponto:  P001 - km 0,135 - Est 6 + 15,00 - -21.154157, -47.697923
+function pointLine(p,i){
+  const parts=[pcode(i)];
+  if(p.km!=null) parts.push('km '+fmtKm(p.km));
+  if(p.est!=null) parts.push('Est '+fmtEst(p.est));
+  parts.push(p.lat!=null?p.lat.toFixed(6)+', '+p.lon.toFixed(6):'sem GPS');
+  return parts.join(' - ');
+}
+function posValues(s,o){
+  return{km:s.modo!=='est'?kmM(s,o):null, est:s.modo!=='km'?estM(s,o):null};
+}
+
+// ════════════════════════════════
+//  UI
+// ════════════════════════════════
+function bigHTML(kind,m){
+  if(kind==='km'){
+    const f=fmtKm(m);const i=f.indexOf(',');
+    return '<span class="odo-val">'+f.substring(0,i)+'<span class="odo-dec">'+f.substring(i)+'</span></span><span class="odo-unit">km</span>';
+  }
+  const p=estParts(m);
+  return '<span class="odo-val"><span class="odo-pre">Est</span>'+(p.neg?'-':'')+p.n+'<span class="odo-plus"> + '+nf(p.r,2)+'</span></span>';
+}
+function updateOdo(){
+  const s=S();
+  document.getElementById('odo-open').style.display=s?'block':'none';
+  document.getElementById('odo-closed').style.display=s?'none':'block';
+  const pill=document.getElementById('pill-dir');
+  document.getElementById('b-spd').textContent=fmtSpd(curSpd);
+  document.getElementById('b-spd-unit').textContent=settings.spd==='ms'?'m/s':'km/h';
+  if(curLat!==null) document.getElementById('odo-latlon').textContent=fmtCoord(curLat,curLon);
+  if(!s){
+    pill.style.visibility='hidden';
+    document.getElementById('b-dist').textContent='0,000';
+    document.getElementById('b-pts').textContent='0';
+  }else{
+    pill.style.visibility='visible';
+    if(s.dir==='C'){pill.textContent='▲ Crescente';pill.className='pill pill-dir cresc';}
+    else{pill.textContent='▼ Decrescente';pill.className='pill pill-dir decresc';}
+    ['km','est','cor'].forEach(m=>document.getElementById('mode-'+m).className='mode-chip'+(s.modo===m?' sel':''));
+    const o=off(s);
+    const main=document.getElementById('odo-main'),sec=document.getElementById('odo-second');
+    if(s.modo==='km'){main.innerHTML=bigHTML('km',kmM(s,o));sec.style.display='none';}
+    else if(s.modo==='est'){main.innerHTML=bigHTML('est',estM(s,o));sec.style.display='none';}
+    else{
+      const prim=s.prim||'est';
+      main.innerHTML=bigHTML(prim,prim==='km'?kmM(s,o):estM(s,o));
+      sec.style.display='block';
+      sec.innerHTML=prim==='km'
+        ?'<span class="l">Estaca</span><span class="v">'+fmtEst(estM(s,o))+'</span> <span class="l">⇅</span>'
+        :'<span class="l">km</span><span class="v">'+fmtKm(kmM(s,o))+'</span> <span class="l">⇅</span>';
+    }
+    document.getElementById('b-dist').textContent=nf(s.dist/1000,3);
+    document.getElementById('b-pts').textContent=s.points.length;
+  }
+  renderSection();renderParciais();calcGoto();
+}
+function modoTxt(m){return m==='km'?'KM':m==='est'?'Estaca':'KM ⇄ Estaca';}
+function marcoTxt(s){
+  if(s.modo==='km') return 'Marco zero: km '+fmtKm(s.k0);
+  if(s.modo==='est') return 'Marco zero: Est '+fmtEst(s.s0);
+  return 'Marco zero: Est '+fmtEst(s.s0)+' = km '+fmtKm(s.k0);
+}
+function renderSection(){
+  const s=S();
+  const btn=document.getElementById('btn-sec'),rec=document.getElementById('sec-rec');
+  const mark=document.getElementById('btn-mark');
+  document.getElementById('card-parc').style.display=s?'block':'none';
+  mark.disabled=!s;
+  if(!s){
+    document.getElementById('sec-nome').textContent='Sem seção aberta';
+    document.getElementById('sec-desc').textContent='Toque em “Abrir seção” para cravar o marco zero e começar a gravar o trajeto.';
+    rec.style.display='none';btn.textContent='▶ Abrir seção';btn.className='btn-sm y';
+    document.getElementById('btn-fin2-txt').textContent='Abrir seção';
+  }else{
+    document.getElementById('sec-nome').textContent=s.nome;
+    document.getElementById('sec-desc').innerHTML=esc(marcoTxt(s))+'<br>'+(s.dir==='C'?'▲ Crescente':'▼ Decrescente')+' · aberta em '+fmtDT(s.ini);
+    rec.style.display='inline-flex';
+    document.getElementById('sec-rec-txt').textContent='Gravando trajeto · '+s.track.length+' coords';
+    btn.textContent='🏁 Encerrar';btn.className='btn-sm r';
+    document.getElementById('btn-fin2-txt').textContent='Encerrar';
+  }
+}
+function renderParciais(){
+  const s=S();if(!s)return;
+  const box=(name,d,cls,btns,idx)=>`<div class="parc ${cls}">
+      <div class="parc-name" ${idx!=null?`onclick="openRename(${idx})"`:''}>${esc(name)}</div>
+      <div class="parc-btns">${btns}</div>
+      <div class="parc-km">${nf(d/1000,3)} <small>km</small></div>
+      <div class="parc-est">${fmtEst(d)} est · ${nf(d,1)} m</div></div>`;
+  let h=box('Total da seção',s.dist,'tot','',null);
+  s.parciais.forEach((p,i)=>{
+    const d=Math.max(0,s.dist-p.base);
+    h+=box(p.nome,d,'',`<button class="pb-zero" onclick="zeroParcial(${i})" title="Zerar">↺</button><button class="pb-del" onclick="delParcial(${i})" title="Remover">✕</button>`,i);
+  });
+  document.getElementById('parc-grid').innerHTML=h;
+}
+function renderPoints(){
+  const s=S();
+  const html=(!s||!s.points.length)
+    ?'<div class="empty-pts">'+(s?'Nenhum ponto nesta seção.<br>Toque em “Marcar Ponto”.':'Abra uma seção para marcar pontos.')+'</div>'
+    :s.points.map((p,i)=>`<div class="pt-item">
+        <div class="pt-num">${pcode(i)}</div>
+        <div class="pt-info">
+          <div class="pt-desc">${esc(p.desc||'(sem descrição)')}</div>
+          <div class="pt-line">${[p.km!=null?'km '+fmtKm(p.km):'',p.est!=null?'Est '+fmtEst(p.est):''].filter(Boolean).join(' · ')}</div>
+          ${p.obs?`<div class="pt-obs">${esc(p.obs)}</div>`:''}
+          <div class="pt-coords">${p.lat!=null?fmtCoord(p.lat,p.lon):'sem GPS'}</div>
+        </div>
+        <button class="pt-edit" onclick="openEditPoint(${i})">✏️</button>
+        <button class="pt-del" onclick="askDelPoint(${i})">🗑</button>
+      </div>`).reverse().join('');
+  document.getElementById('pts-list').innerHTML=html;
+  document.getElementById('pts-list-tablet').innerHTML=html;
+}
+function renderHist(){
+  const el=document.getElementById('hist-list');
+  if(!sessions.length){el.innerHTML='<div class="empty-pts" style="padding:10px">Nenhuma seção ainda.</div>';return;}
+  el.innerHTML=sessions.slice().reverse().map(s=>`<div class="hist-item">
+      <div class="i"><div class="t">${s.id===activeId?'🔴 ':''}${esc(s.nome)}</div>
+      <div class="s">${fmtDT(s.ini)} · ${nf(s.dist/1000,3)} km · ${s.points.length} pt · ${modoTxt(s.modo)}</div></div>
+      <button class="btn-sm n" onclick="openExport('${s.id}')">📤</button>
+      ${s.id!==activeId?`<button class="btn-sm r" onclick="askDelSection('${s.id}')">🗑</button>`:''}
+    </div>`).join('');
+}
+function renderAll(){updateOdo();renderPoints();renderHist();}
+
+// ════════════════════════════════
+//  SEÇÃO
+// ════════════════════════════════
+function onSecBtn(){ if(S()) openModal('modal-fin'); else openNewSection(); }
+function openNewSection(){
+  const n=sessions.length+1;
+  document.getElementById('ns-nome').value='Seção '+String(n).padStart(2,'0');
+  document.getElementById('ns-km').value='';document.getElementById('ns-est-n').value='';document.getElementById('ns-est-m').value='';
+  nsModo(nsState.modo);nsDir(nsState.dir);openModal('modal-sec');
+}
+function nsModo(m){
+  nsState.modo=m;
+  ['km','est','cor'].forEach(x=>document.getElementById('ns-m-'+x).className='chip'+(x===m?' sel':''));
+  document.getElementById('ns-f-km').style.display=m==='est'?'none':'block';
+  document.getElementById('ns-f-est').style.display=m==='km'?'none':'block';
+  document.getElementById('ns-est-lbl').textContent=m==='cor'?'Equivale à estaca':'Estaca inicial (marco zero)';
+  document.getElementById('ns-help').innerHTML=m==='cor'
+    ?'Correlação no ponto onde você está agora. Ex.: <b>km 0,000 = Est 92 + 0,00</b>, ou <b>km 0,000 = Est 25</b>. Daqui em diante km e estaca andam juntos.'
+    :m==='est'?'Estaca de '+nf(estSize(),0)+' m. Ex.: Est 6 + 15,00 = 135 m do início do estaqueamento.':'Ex.: 340,000 para começar no km 340.';
+}
+function nsDir(d){
+  nsState.dir=d;
+  document.getElementById('ns-d-C').className='chip'+(d==='C'?' sel':'');
+  document.getElementById('ns-d-D').className='chip'+(d==='D'?' sel dec':'');
+}
+function startSection(){
+  const k=readKm('ns-km'),e=readEst('ns-est-n','ns-est-m');
+  const s={id:'s'+Date.now(),nome:(document.getElementById('ns-nome').value||'').trim()||('Seção '+(sessions.length+1)),
+    modo:nsState.modo,prim:'est',dir:nsState.dir,k0:isNaN(k)?0:k,s0:isNaN(e)?0:e,
+    ini:Date.now(),fim:null,dist:0,baseDist:0,baseOff:0,estSize:estSize(),
+    parciais:[{nome:'Parcial 1',base:0},{nome:'Parcial 2',base:0}],points:[],track:[]};
+  if(curLat!=null&&curAcc<=settings.acc) s.track.push([+curLat.toFixed(7),+curLon.toFixed(7),0]);
+  sessions.push(s);activeId=s.id;
+  lastLat=curLat;lastLon=curLon;lastTime=Date.now(); // marco zero = posição atual
+  closeModal('modal-sec');save();renderAll();
+}
+function endSection(){
+  const s=S();if(!s)return;
+  s.fim=Date.now();s.offFim=off(s);activeId=null;
+  closeModal('modal-fin');save();renderAll();
+}
+function setModo(m){const s=S();if(!s)return;s.modo=m;save();updateOdo();}
+function swapPrim(){const s=S();if(!s)return;s.prim=(s.prim||'est')==='est'?'km':'est';save();updateOdo();}
+function toggleDir(){
+  const s=S();if(!s)return;
+  s.baseOff=off(s);s.baseDist=s.dist;s.dir=s.dir==='C'?'D':'C'; // ancora: não salta
+  save();updateOdo();
+}
+function openCorrigir(){
+  const s=S();if(!s)return;
+  setCorTipo(s.modo==='km'?'km':(s.modo==='est'?'est':(s.prim||'est')));
+  const o=off(s);
+  document.getElementById('cr-km-v').value=fmtKm(kmM(s,o));
+  const p=estParts(estM(s,o));
+  document.getElementById('cr-est-n').value=(p.neg?'-':'')+p.n;document.getElementById('cr-est-m').value=nf(p.r,2);
+  document.getElementById('cr-km').style.display=s.modo==='est'?'none':'';
+  document.getElementById('cr-est').style.display=s.modo==='km'?'none':'';
+  openModal('modal-cor');
+}
+function setCorTipo(t){
+  corTipo=t;
+  document.getElementById('cr-km').className=t==='km'?'sel':'';document.getElementById('cr-est').className=t==='est'?'sel':'';
+  document.getElementById('cr-in-km').style.display=t==='km'?'block':'none';
+  document.getElementById('cr-in-est').style.display=t==='est'?'flex':'none';
+}
+function applyCorrigir(){
+  const s=S();if(!s)return;
+  let o;
+  if(corTipo==='km'){const k=readKm('cr-km-v');if(isNaN(k))return;o=k-s.k0;}
+  else{const e=readEst('cr-est-n','cr-est-m');if(isNaN(e))return;o=e-s.s0;}
+  s.baseOff=o;s.baseDist=s.dist;
+  closeModal('modal-cor');save();updateOdo();
+}
+
+// ════════════════════════════════
+//  PARCIAIS
+// ════════════════════════════════
+function addParcial(){const s=S();if(!s)return;if(s.parciais.length>=8){alert('Máximo de 8 parciais.');return;}
+  s.parciais.push({nome:'Parcial '+(s.parciais.length+1),base:s.dist});save();renderParciais();}
+function zeroParcial(i){const s=S();if(!s)return;s.parciais[i].base=s.dist;save();renderParciais();}
+function delParcial(i){const s=S();if(!s)return;s.parciais.splice(i,1);save();renderParciais();}
+function openRename(i){const s=S();if(!s)return;renIdx=i;document.getElementById('ren-v').value=s.parciais[i].nome;openModal('modal-ren');}
+function applyRename(){const s=S();if(!s||renIdx<0)return;const v=document.getElementById('ren-v').value.trim();if(v)s.parciais[renIdx].nome=v;closeModal('modal-ren');save();renderParciais();}
+
+// ════════════════════════════════
+//  IR ATÉ / CONVERTER
+// ════════════════════════════════
+function setGotoTipo(t){
+  gotoTipo=t;
+  document.getElementById('gt-km').className=t==='km'?'sel':'';document.getElementById('gt-est').className=t==='est'?'sel':'';
+  document.getElementById('gt-in-km').style.display=t==='km'?'block':'none';
+  document.getElementById('gt-in-est').style.display=t==='est'?'flex':'none';
+  calcGoto();
+}
+function calcGoto(){
+  const res=document.getElementById('goto-res');const s=S();
+  let tm=gotoTipo==='km'?readKm('gt-km-v'):readEst('gt-est-n','gt-est-m');
+  if(isNaN(tm)){res.style.display='none';return;}
+  let h='';
+  if(gotoTipo==='est') h+='Est '+fmtEst(tm)+' = <b>'+nf(tm,2)+' m</b> do início do estaqueamento';
+  else h+='km '+fmtKm(tm)+' = <b>'+nf(tm,1)+' m</b>';
+  if(s){
+    const to=gotoTipo==='km'?tm-s.k0:tm-s.s0;
+    if(s.modo==='cor') h+='<br>Correlação: '+(gotoTipo==='km'?'Est '+fmtEst(s.s0+to):'km '+fmtKm(s.k0+to));
+    const delta=to-off(s);const ahead=s.dir==='C'?delta>0:delta<0;const ad=Math.abs(delta);
+    h+='<br>'+(ad<1?'📍 <b>Você está no ponto</b>':(ahead?'⬆️ Faltam <b>'+fmtDistM(ad)+'</b> à frente':'⬇️ Ficou <b>'+fmtDistM(ad)+'</b> para trás'))
+      +' <span style="color:var(--sub)">('+nf(ad/estSize(),2)+' estacas)</span>';
+  }
+  res.innerHTML=h;res.style.display='block';
+}
+
+// ════════════════════════════════
+//  PONTOS
+// ════════════════════════════════
+function openAddPoint(){
+  const s=S();if(!s)return;
+  editPt=-1;
+  const o=off(s);const v=posValues(s,o);
+  frozen={o,km:v.km,est:v.est,lat:curLat,lon:curLon}; // congela no clique
+  document.getElementById('pt-title').textContent='📍 Marcar Ponto';
+  document.getElementById('pt-reg').textContent=pointLine(frozen,s.points.length);
+  document.getElementById('pt-desc').value='';document.getElementById('pt-obs').value='';
+  openModal('modal-pt');setTimeout(()=>document.getElementById('pt-desc').focus(),150);
+}
+function openEditPoint(i){
+  const s=S();if(!s)return;const p=s.points[i];editPt=i;
+  document.getElementById('pt-title').textContent='✏️ Editar '+pcode(i);
+  document.getElementById('pt-reg').textContent=pointLine(p,i);
+  document.getElementById('pt-desc').value=p.desc||'';document.getElementById('pt-obs').value=p.obs||'';
+  openModal('modal-pt');
+}
+function savePoint(){
+  const s=S();if(!s)return;
+  const desc=document.getElementById('pt-desc').value.trim(),obs=document.getElementById('pt-obs').value.trim();
+  if(editPt>=0){const p=s.points[editPt];p.desc=desc;p.obs=obs;}
+  else s.points.push(Object.assign({},frozen,{desc,obs,dir:s.dir,t:Date.now()}));
+  editPt=-1;closeModal('modal-pt');save();renderPoints();updateOdo();renderHist();
+}
+function askDelPoint(i){
+  const s=S();const p=s.points[i];
+  confirmAsk('Remover ponto?',pcode(i)+' · '+(p.desc||'')+'<br><small>Os pontos seguintes serão renumerados.</small>',()=>{s.points.splice(i,1);save();renderPoints();updateOdo();renderHist();});
+}
+function askDelSection(id){
+  const s=sessions.find(x=>x.id===id);if(!s)return;
+  confirmAsk('Excluir seção?',esc(s.nome)+' · '+s.points.length+' ponto(s). Exporte antes se precisar.',()=>{sessions=sessions.filter(x=>x.id!==id);save();renderHist();});
+}
+function confirmAsk(t,d,fn){
+  document.getElementById('conf-title').textContent=t;document.getElementById('conf-desc').innerHTML=d;
+  document.getElementById('conf-ok').onclick=()=>{closeModal('modal-conf');fn();};openModal('modal-conf');
+}
+
+// ════════════════════════════════
+//  GPS (mesmo motor do SLIR)
+// ════════════════════════════════
+function isNativeApp(){return typeof window.NativeGPS!=='undefined'&&window.NativeGPS.isNative&&window.NativeGPS.isNative()==='true';}
+const _gpsDiag={posCount:0,lastSource:'',lastError:'',startedAt:null,visible:false};
+function _updateDiagPanel(){
+  if(!_gpsDiag.visible)return;
+  const srcLabel={fused:'FusedLocation',gps:'GPS nativo',network:'Rede/WiFi',webview:'WebView Geo'}[_gpsDiag.lastSource]||_gpsDiag.lastSource||'—';
+  document.getElementById('gps-diag-src').textContent=srcLabel;
+  document.getElementById('gps-diag-cnt').textContent=_gpsDiag.posCount;
+  document.getElementById('gps-diag-acc').textContent=curAcc?Math.round(curAcc)+'m':'—';
+  document.getElementById('gps-diag-err').textContent=_gpsDiag.lastError||'—';
+  document.getElementById('gps-diag-ela').textContent=_gpsDiag.startedAt?Math.round((Date.now()-_gpsDiag.startedAt)/1000)+'s':'—';
+  document.getElementById('gps-diag-coord').textContent=curLat?fmtCoord(curLat,curLon):'aguardando...';
+}
+function toggleDiag(){_gpsDiag.visible=!_gpsDiag.visible;document.getElementById('gps-diag-panel').style.display=_gpsDiag.visible?'block':'none';_updateDiagPanel();}
+function diagRestartGps(){_gpsDiag.posCount=0;_gpsDiag.lastSource='';_gpsDiag.lastError='';
+  if(_nativeGpsFallbackTimer){clearTimeout(_nativeGpsFallbackTimer);_nativeGpsFallbackTimer=null;}
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}startGps();_updateDiagPanel();}
+function diagTestWebview(){_gpsDiag.posCount=0;_gpsDiag.lastSource='webview';_gpsDiag.lastError='';_gpsDiag.startedAt=Date.now();
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}_startWebViewGps();_updateDiagPanel();}
+setInterval(()=>{if(_gpsDiag.visible)_updateDiagPanel();},2000);
+let _nativeGpsFallbackTimer=null;
+function startGps(){
+  _gpsDiag.startedAt=Date.now();
+  if(isNativeApp()){
+    window.NativeGPS.start&&window.NativeGPS.start();
+    updateBanner('ok','GPS nativo ativo');
+    _nativeGpsFallbackTimer=setTimeout(()=>{
+      if(curLat===null){_gpsDiag.lastError='Nativo sem sinal · usando WebView';updateBanner('warn','GPS nativo sem sinal · tentando alternativa...');_startWebViewGps();}
+    },10000);
+    return;
+  }
+  _startWebViewGps();
+}
+function _startWebViewGps(){
+  if(!navigator.geolocation){_gpsDiag.lastError='GPS não disponível';updateBanner('err','GPS não disponível');return;}
+  if(watchId!==null)return;
+  _gpsDiag.lastSource='webview';
+  watchId=navigator.geolocation.watchPosition(
+    pos=>{_gpsDiag.posCount++;_gpsDiag.lastSource='webview';_gpsDiag.lastError='';onPosition(pos);},
+    err=>{if(err.code===1){_gpsDiag.lastError='Permissão negada';updateBanner('err','Permissão negada. Libere a localização nas configurações.');}
+      else{_gpsDiag.lastError='Erro código '+err.code;updateBanner('warn','Aguardando sinal GPS...');}},
+    {enableHighAccuracy:true,timeout:20000,maximumAge:2000});
+  updateBanner('ok','Aguardando primeira posição...');
+}
+window._nativeGpsPosition=function(lat,lon,acc,speedMs,source){
+  if(_nativeGpsFallbackTimer){clearTimeout(_nativeGpsFallbackTimer);_nativeGpsFallbackTimer=null;}
+  _gpsDiag.posCount++;_gpsDiag.lastSource=source||'native';_gpsDiag.lastError='';_updateDiagPanel();
+  onPosition({coords:{latitude:lat,longitude:lon,accuracy:acc,speed:speedMs}});
+};
+function updateBanner(state,txt){
+  document.getElementById('gps-banner').className='gps-banner '+state;
+  document.getElementById('gps-banner-txt').textContent=txt;
+  document.getElementById('odo-dot').className='odo-dot'+(state==='ok'?' on':state==='weak'?' weak':'');
+  const s=S();
+  document.getElementById('odo-status').textContent=(state==='ok'?'GPS ativo':state==='weak'?'GPS fraco':'GPS aguardando')+(s?' · '+s.nome:'');
+}
+function onPosition(pos){
+  const lat=pos.coords.latitude,lon=pos.coords.longitude;
+  if(Math.abs(lat)>90||Math.abs(lon)>180)return;
+  const acc=Math.abs(pos.coords.accuracy||999),now=Date.now();
+  curLat=lat;curLon=lon;curAcc=acc;
+  if(acc>settings.acc){updateBanner('weak','⚠️ GPS fraco · Precisão: '+Math.round(acc)+'m');updateOdo();return;}
+  updateBanner('ok','GPS ativo · Precisão: '+Math.round(acc)+'m');
+  const s=S();
+  if(lastLat!==null&&lastTime!==null){
+    const dkm=haversine(lastLat,lastLon,lat,lon);
+    const dt=(now-lastTime)/3600000;const spd=dt>0?dkm/dt:0;
+    if(spd>SPD_MAX){lastLat=lat;lastLon=lon;lastTime=now;return;}
+    if(dkm>0.003){ // 3 m — mesmo limiar do SLIR
+      curSpd=spd;
+      if(s){
+        s.dist+=dkm*1000;
+        s.track.push([+lat.toFixed(7),+lon.toFixed(7),Math.round(off(s)*10)/10]); // gravação automática
+        save();
+      }
+      lastLat=lat;lastLon=lon;lastTime=now;
+      updateOdo();
+      return;
+    }
+    updateOdo();
+    return; // não atualiza a âncora enquanto parado (evita perder distância lenta)
+  }
+  lastLat=lat;lastLon=lon;lastTime=now;
+  if(s&&!s.track.length){s.track.push([+lat.toFixed(7),+lon.toFixed(7),Math.round(off(s)*10)/10]);save();}
+  updateOdo();
+}
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,r=Math.PI/180,dLa=(la2-la1)*r,dLo=(lo2-lo1)*r;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ════════════════════════════════
+//  EXPORTAÇÃO
+// ════════════════════════════════
+let expId=null;
+function openExport(id){
+  const sel=document.getElementById('exp-sec');
+  if(!sessions.length){alert('Nenhuma seção para exportar.');return;}
+  sel.innerHTML=sessions.slice().reverse().map(s=>`<option value="${s.id}">${esc(s.nome)} · ${fmtDT(s.ini)}</option>`).join('');
+  sel.value=id||activeId||sessions[sessions.length-1].id;
+  openModal('modal-exp');
+}
+function fileBase(s){
+  const d=new Date(s.ini);const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return 'MarcoZero_'+(s.nome||'secao').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'')+'_'+ds;
+}
+function buildKML(s){
+  const E=s.estSize||estSize();
+  let k=`<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+<name>${esc(s.nome)} — Marco Zero</name>
+<description>${esc(marcoTxt(s))} · ${s.dir==='C'?'Crescente':'Decrescente'} · Estaca ${E} m · ${fmtDT(s.ini)}${s.fim?' a '+fmtDT(s.fim):''} · DVAbrão Serviços</description>
+<Style id="trk"><LineStyle><color>ff00c5f5</color><width>4</width></LineStyle></Style>
+<Style id="pt"><IconStyle><scale>1.1</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/ylw-circle.png</href></Icon></IconStyle></Style>
+<Style id="mz"><IconStyle><scale>1.3</scale><Icon><href>http://maps.google.com/mapfiles/kml/paddle/grn-stars.png</href></Icon></IconStyle></Style>\n`;
+  if(s.track.length){
+    const t0=s.track[0];
+    k+=`<Placemark><name>Marco zero</name><description>${esc(marcoTxt(s))}</description><styleUrl>#mz</styleUrl><Point><coordinates>${t0[1]},${t0[0]},0</coordinates></Point></Placemark>\n`;
+  }
+  if(s.track.length>1){
+    k+=`<Placemark><name>Trajeto ${esc(s.nome)} (${nf(s.dist/1000,3)} km)</name><styleUrl>#trk</styleUrl><LineString><tessellate>1</tessellate><coordinates>\n`;
+    k+=s.track.map(p=>p[1]+','+p[0]+',0').join('\n');
+    k+=`\n</coordinates></LineString></Placemark>\n`;
+  }
+  k+='<Folder><name>Pontos</name>\n';
+  s.points.forEach((p,i)=>{
+    if(p.lat==null)return;
+    k+=`<Placemark><name>${esc(pcode(i)+(p.desc?' - '+p.desc:''))}</name>
+<description>${esc(pointLine(p,i))}${p.obs?'\nObs.: '+esc(p.obs):''}</description><styleUrl>#pt</styleUrl>
+<Point><coordinates>${p.lon},${p.lat},0</coordinates></Point></Placemark>\n`;
+  });
+  return k+'</Folder></Document></kml>';
+}
+function buildReport(s,forPrint){
+  const rows=s.points.map((p,i)=>`<tr>
+    <td class="c b">${pcode(i)}</td>
+    <td><b>${esc(p.desc||'—')}</b>${p.obs?'<br><i>'+esc(p.obs)+'</i>':''}</td>
+    ${s.modo!=='est'?`<td class="c nw">${p.km!=null?fmtKm(p.km):'—'}</td>`:''}
+    ${s.modo!=='km'?`<td class="c nw">${p.est!=null?fmtEst(p.est):'—'}</td>`:''}
+    <td class="mono">${p.lat!=null?p.lat.toFixed(6)+', '+p.lon.toFixed(6):'—'}</td>
+    <td class="c nw">${new Date(p.t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td></tr>
+    <tr class="ln"><td></td><td colspan="${3+(s.modo==='cor'?2:1)}" class="mono">${esc(pointLine(p,i))}</td></tr>`).join('');
+  const o1=s.fim?s.offFim:off(s);
+  const fimTxt=s.modo==='km'?'km '+fmtKm(s.k0+o1):s.modo==='est'?'Est '+fmtEst(s.s0+o1):'Est '+fmtEst(s.s0+o1)+' = km '+fmtKm(s.k0+o1);
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(s.nome)} — Relatório Marco Zero</title><style>
+html,body{background:#fff!important;color:#111!important;margin:0;padding:0}*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;font-size:11px}
+.content{padding:16px 14px}.cab{border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:10px}
+.emp{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}.sub{font-size:11px;color:#333;margin-top:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-top:8px;font-size:10.5px;line-height:1.35}.grid b{margin-right:4px}
+table{width:100%;border-collapse:collapse;margin-top:8px}th{background:#111;color:#fff;padding:7px 6px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:6px;border-top:1px solid #ccc;vertical-align:top;color:#111}tr.ln td{border-top:none;padding-top:0;color:#444;font-size:9.5px}
+.c{text-align:center}.b{font-weight:800}.nw{white-space:nowrap}.mono{font-family:monospace;font-size:9.5px}
+.rod{margin-top:14px;font-size:10px;color:#555;display:flex;justify-content:space-between;border-top:1px solid #ccc;padding-top:8px}
+@media print{@page{size:A4;margin:12mm}.content{padding:0}th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><div class="content">
+<div class="cab"><div class="emp">DVAbrão Serviços</div><div class="sub">Marco Zero · Odômetro de Obras — Relatório de pontos</div>
+<div class="grid">
+<div><b>Seção:</b> ${esc(s.nome)}</div><div><b>Navegação:</b> ${modoTxt(s.modo)} · estaca ${s.estSize||estSize()} m</div>
+<div><b>Marco zero:</b> ${esc(marcoTxt(s).replace('Marco zero: ',''))}</div><div><b>Sentido:</b> ${s.dir==='C'?'Crescente':'Decrescente'}</div>
+<div><b>Posição final:</b> ${fimTxt}</div><div><b>Percorrido:</b> ${nf(s.dist/1000,3)} km (${fmtEst(s.dist)} est)</div>
+<div><b>Início:</b> ${fmtDT(s.ini)}</div><div><b>Fim:</b> ${s.fim?fmtDT(s.fim):'em andamento'}</div>
+</div></div>
+<table><thead><tr><th>Ponto</th><th>Descrição / Observação</th>${s.modo!=='est'?'<th>KM</th>':''}${s.modo!=='km'?'<th>Estaca</th>':''}<th>Coordenadas</th><th>Hora</th></tr></thead>
+<tbody>${rows||'<tr><td colspan="6" class="c">Nenhum ponto registrado.</td></tr>'}</tbody></table>
+<div class="rod"><span>Total: ${s.points.length} ponto(s) · ${s.track.length} coordenadas de trajeto</span><span>Gerado em ${fmtDT(Date.now())}</span></div>
+</div>${forPrint?'<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script>':''}</body></html>`;
+}
+async function doExport(tipo){
+  const s=sessions.find(x=>x.id===document.getElementById('exp-sec').value);if(!s)return;
+  closeModal('modal-exp');const base=fileBase(s);
+  if(tipo==='kml'){await nativeShare(new Blob([buildKML(s)],{type:'application/vnd.google-earth.kml+xml'}),base+'.kml','KML '+s.nome);}
+  else if(tipo==='html'){await nativeShare(new Blob([buildReport(s,false)],{type:'text/html'}),base+'.html','Relatório '+s.nome);}
+  else if(tipo==='pdf'){
+    if(typeof window.NativePrint!=='undefined'&&window.NativePrint.printHtml){window.NativePrint.printHtml(buildReport(s,false),base);return;}
+    const w=window.open('','_blank');
+    if(w){w.document.write(buildReport(s,true));w.document.close();}
+    else await nativeShare(new Blob([buildReport(s,false)],{type:'text/html'}),base+'.html','Relatório');
+  }
+}
+async function nativeShare(blob,name,title){
+  if(typeof window.NativeShare!=='undefined'&&window.NativeShare.shareFile){
+    try{const r=new FileReader();await new Promise((ok,ko)=>{r.onload=ok;r.onerror=ko;r.readAsDataURL(blob);});
+      window.NativeShare.shareFile(r.result.split(',')[1],blob.type||'application/octet-stream',name);return;}catch(e){}
+  }
+  const f=new File([blob],name,{type:blob.type});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({title,files:[f]});return;}catch(e){if(e.name==='AbortError')return;}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+}
+
+// ════════════════════════════════
+//  MODAIS / CONFIG
+// ════════════════════════════════
+function openModal(id){document.getElementById(id).classList.remove('hidden');}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function openSettings(){
+  document.getElementById('set-est').value=nf(estSize(),2).replace(',00','');
+  document.getElementById('set-spd').value=settings.spd;document.getElementById('set-coord').value=settings.coord;
+  document.getElementById('set-acc').value=String(settings.acc);
+  document.getElementById('settings-panel').classList.add('open');
+}
+function closeSettings(){document.getElementById('settings-panel').classList.remove('open');}
+function saveSettings(){
+  const e=parseNum(document.getElementById('set-est').value);
+  settings.est=e>0?e:20;settings.spd=document.getElementById('set-spd').value;
+  settings.coord=document.getElementById('set-coord').value;settings.acc=parseInt(document.getElementById('set-acc').value)||40;
+  const s=S();if(s)s.estSize=settings.est;
+  save();renderAll();
+}
+function toggleAcc(id){document.getElementById(id).classList.toggle('open');}
+function openAboutFull(){document.getElementById('about-full').classList.add('open');}
+function closeAboutFull(){document.getElementById('about-full').classList.remove('open');}
+function useFallbackLogo(){document.getElementById('logo-container').innerHTML='<div class="logo-fallback">DVA</div>';}
+// Botão voltar do Android: fecha o que estiver aberto
+window.odometroBack=function(){
+  if(document.getElementById('about-full').classList.contains('open')){closeAboutFull();return true;}
+  const m=[...document.querySelectorAll('.modal-overlay')].find(x=>!x.classList.contains('hidden'));
+  if(m){m.classList.add('hidden');return true;}
+  if(document.getElementById('settings-panel').classList.contains('open')){closeSettings();return true;}
+  return false;
+};
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.add('hidden');}));
+
+// ════════════════════════════════
+//  INIT
+// ════════════════════════════════
+load();
+setGotoTipo('est');
+renderAll();
+startGps();
+(function(){
+  const v=isNativeApp()&&window.NativeGPS.getVersion?'Versão '+window.NativeGPS.getVersion():'Versão 1.0';
+  ['about-ver','about-full-ver'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=v;});
+})();
+</script>
+</body>
+</html>
